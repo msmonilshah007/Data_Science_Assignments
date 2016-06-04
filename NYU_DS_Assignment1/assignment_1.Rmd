@@ -1,0 +1,145 @@
+---
+title: "Assignment"
+author: "Fenil"
+date: "February 13, 2016"
+output: pdf_document
+-----
+
+#Q2
+
+#Read the file from World_Data
+World_data1<-read.table(file.choose(),header = T,skip = 627,sep=",")
+
+#Read the file from World_Data
+header=read.table(file.choose(),nrows=1,header=F,sep=",")             
+
+colnames(World_data1)<-unlist(header)
+
+apply1<-apply(World_data1,2,function(x) max(x,na.rm=TRUE))
+
+df1=data.frame(apply1)
+View(df1)
+df1=data.frame(df1[-1,])
+View(df1)
+
+library(sqldf)
+
+#Read the Latitude data  countrieslglt
+countrieslglt=read.csv.sql(file.choose(),'select Latitude from file where Name in(\"Argentina\",\"Australia\",\"Austria\",\"Belgium\",\"Bolivia\",\"Brazil\",\"Bulgaria\",\"Canada\",\"Chile\",\"France\",\"Germany\",\"Hungary\",\"Japan\",\"Mexico\",\"Netherlands\",\"New Zealand\",\"Norway\",\"Paraguay\",\"Peru\",\"Poland\",\"Romania\",\"Russia\",\"South Africa\",\"Spain\",\"Sweden\",\"Switzerland\",\"Ukraine\",\"United States\",\"Uruguay\")')
+
+df1$df1..1...<-as.numeric(as.character(df1$df1..1...))
+View(df1)
+countrieslglt$Latitude<-as.double(as.numeric(countrieslglt$Latitude))
+View(countrieslglt)
+plot(df1$df1..1...,countrieslglt$Latitude,xlab="Maximum flu counts",ylab="Latitude",main="Relation between maximum counts and Latitude")
+
+#Q3-1
+
+url="http://www.cdc.gov/mmwr/preview/mmwrhtml/mm6401a4.htm?s_cid=mm6401a4_w"
+library(XML)
+url.table = readHTMLTable(url, header=T, which=1,stringsAsFactors=F)
+View(url.table)
+
+
+Vaccination_status<-data.frame(url.table$V1)
+Vaccination_status[,"No"]<-data.frame(url.table$V7)
+Vaccination_status[,"Total"]<-data.frame(url.table$V8)
+Vaccination_status[,"%"]<-data.frame(url.table$V9)
+Vaccination_status[,"p value"]<-data.frame(url.table$V10)
+Vaccination_status<-Vaccination_status[4:length(Vaccination_status$No),]
+colnames(Vaccination_status)[1]<-"Characteristics"
+View(Vaccination_status)
+
+
+#Q3-2
+
+u = "http://tidesonline.nos.noaa.gov/data_read.shtml?station_info=9414290+San+Francisco,+CA"
+h = htmlParse(u)
+p = getNodeSet(h, "//pre")
+con = textConnection(xmlValue(p[[2]]))
+tides = read.table(con)
+View(tides)
+
+
+
+#Q1-5 read US_data file
+US_data=read.csv(file.choose(),header=T,sep=',') 
+us_data_state=data.frame(US_data)
+us_data_state=us_data_state[c(589:620),c(3:53)]
+View(us_data_state)
+datastate<-apply(us_data_state,2,function(x) max(x,na.rm=TRUE))
+dataset1<-data.frame(data state)
+new_df <- dataset1[ order(row.names(dataset1)), ]
+new_df=data.frame(new_df)
+
+#Read statepopfile
+state_pop<-read.table(file.choose(), sep = ",", header = T)
+state_popdf<-data.frame(state_pop)
+View(state_popdf1)
+state_popdf2<-state_popdf1[order(state_popdf1[,1]),]
+
+View(state_popdf2)
+datasetplot2<-sqldf("select * from state_popdf2 where NAME not in('Midwest Region','Northeast Region','Puerto Rico','South Region','West Region','United States')")
+
+View(datasetplot2)
+
+plot(new_df$new_df,datasetplot2$POPULATION,ylab="population",xlab="flu trends",main="population vs peak value of flu in 2015")
+
+model=lm(new_df$new_df~datasetplot2$POPULATION)
+summary()
+
+
+#Q1-2 read US_data file
+US_data=read.csv(file.choose(),header=T,sep=',') 
+attach(US_data)
+model=lm(HHS.Region.10..AK..ID..OR..WA.~Alaska+Idaho+Oregon+Washington)
+summary(model)
+
+model=lm(HHS.Region.7..IA..KS..MO..NE.~Iowa+Kansas+Missouri+Nebraska)
+summary(model)
+
+#Q1-3 Read US_data file
+US_data=read.csv(file.choose(),header=T,sep=',') 
+attach(US_data)
+US_data["ID"]<-seq(from=1,to=length(Date),by=1)
+attach(US_data)
+plot(ID,Arizona,col="blue",pch=20)
+points(ID,Mesa..AZ,col="red")
+points(ID,Phoenix..AZ,col="green")
+points(ID,Scottsdale..AZ,col="yellow")
+points(ID,Tempe..AZ,col="maroon")
+points(ID,Tucson..AZ,col="violet")
+model=lm(Arizona~Mesa..AZ+Phoenix..AZ+Scottsdale..AZ+Tempe..AZ+Tucson..AZ)
+summary(model)
+
+
+
+#Q1-4 Read US_data file
+US_data_1=read.csv(file.choose(),header=T,sep=",")
+install.packages("lubridate")
+library(lubridate)
+period<-paste(month(US_data_1$Date))
+var<-data.frame
+var<-data.frame(aggregate(HHS.Region.2..NJ..NY.,list(period),mean))
+plot(var$Group.1,var$x,xlab="month",ylab="flu level",main="Flu level vs HHS region 2")
+
+var<-data.frame(aggregate(US_data_1$New.York,list(period),mean))
+plot(var$Group.1,var$x,xlab="month",ylab="flu level",main="Flu level vs New York")
+
+
+var<-data.frame(aggregate(US_data_1$New.York,list(period),mean))
+plot(var$Group.1,var$x,xlab="month",ylab="flu level",main="Flu level vs New York")
+
+var<-data.frame(aggregate(US_data_1$New.Jersey,list(period),mean))
+plot(var$Group.1,var$x,xlab="month",ylab="flu level",main="Flu level vs Jersey")
+
+
+temp<-US_data_1[,54:63]
+temp.dataframe<-data.frame(apply(temp,2,function(x) max(x,na.rm = TRUE)))
+temp.dataframe$region<-row.names(temp.dataframe)
+colnames(temp.dataframe)[1]<-"max_flu_counts"
+plot(temp.dataframe$max_flu_counts,axes=FALSE,xlab="region")
+axis(2)
+axis(1,at=seq_along(temp.dataframe$max_flu_counts),lables=as.character(temp.dataframe$region),las=2)
+
+
