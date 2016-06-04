@@ -1,0 +1,354 @@
+---
+title: "Assignment_4_v4.0"
+author: "Fenil"
+date: "April 09, 2016"
+output: pdf_document
+---
+
+#Read the subs file over here
+edges<-read.table(file.choose(),sep="\t")
+colnames(edges)<-c("idsrc","iddest")
+
+#Read the subs keys over here
+nodes<-read.table(file.choose(),sep="\t")
+colnames(nodes)<-c("id","item")
+
+
+install.packages("networkD3")
+library(networkD3)
+
+networkdata<-data.frame(edges$V1,edges$V2)
+simpleNetwork(networkdata)
+
+
+
+            
+#Q-1A
+#a) Read in the files and visualize the network (try using ggplot2 or networkD3 libraries). 
+
+#Read the subs file over here
+edges<-read.table(file.choose(),sep="\t")
+colnames(edges)<-c("idsrc","iddest")
+
+#Read the keys file over here
+nodes<-read.table(file.choose(),sep="\t")
+colnames(nodes)<-c("id","item")
+
+require(sqldf)
+
+#for changing the name of ids(Source ID,Destination id) to the Item Name
+sourcenodenames<-sqldf("select item from edges,nodes where id=idsrc")
+destinationnodenames<-sqldf("select item from edges,nodes where id=iddest")
+
+#Created a frame called total which has item names for source and destination 
+total <- cbind(sourcenodenames,destinationnodenames) 
+colnames(total)<-c("itemsrc","itemdest")
+
+#ploted graph using networkD3
+networkdata<-data.frame(total$itemsrc,total$itemdest)
+library(networkD3)
+simpleNetwork(networkdata)
+
+
+
+#Q-1B
+#b) Calculate the degree centrality of each node. 
+
+install.packages("igraph")
+library(igraph)
+net <- graph.data.frame(edges, nodes, directed=T)
+#plot(net, edge.arrow.size=.4)
+#net <- simplify(net, remove.multiple = F, remove.loops = T)
+
+#calculating centrality for each node in graph
+degreecentrality<-centralization.degree(net)
+
+#Calculating count of indegree+outdegree
+degcentdf<-data.frame(degreecentrality$res) 
+View(degcentdf)
+
+#Q-1D
+#d)  Which are the most "connected" node(s).
+net <- graph.data.frame(edges, nodes, directed=T)
+#plot(net, edge.arrow.size=.4)
+#net <- simplify(net, remove.multiple = F, remove.loops = T)
+
+#calculating centrality for each node in graph
+degreecentrality<-centralization.degree(net)
+
+#Calculating count of indegree+outdegree
+degcentdf<-data.frame(degreecentrality$res) 
+View(rev(sort(degcentdf)))
+#As we can see from data frame that node no with ID 2(degree-33),12(degree-29),79(degree-29) are the most three connected nodes
+
+#Q-1C
+#c)Visually determine what are the furthest ingredients from cocoa powder. 
+
+#tmp2 = get.shortest.paths(net, from='408', to='142')
+#fromcoca<-shortest_paths(net, from=408)
+
+#Created distMatrix that showa the distance to all other nodes from node cocoa powder(408)
+distMatrix <- shortest.paths(net, v=408)
+max<-0
+coll<-c()
+cnt<-0
+#for(i in 1:562){
+#  if(distMatrix[i][1]==1 && !is.na(distMatrix[i][1]))
+#  {
+#  cnt<-cnt+1
+#  }
+#}
+#Pls empty the coll first and then run the for loop to get required output
+
+#Visually we can see that the nodes which are furthest from node cocoa powder are that nodes which are not connected to it 
+#Created a simple for loop to verify the results which I got from visulization for the query
+for(i in 1:562){
+  if(distMatrix[i][1]==Inf && !is.na(distMatrix[i][1]))
+  {
+  cnt<-cnt+1
+  coll<-union(coll,c(i))
+  }
+}
+coll
+require(sqldf)
+collnames<-sqldf("select item from nodes where id in (93,94,107,108,109,110,111,113,114,256,353,431,432,459,460,463,464,480,481)")
+
+#Results
+#These no of nodes are furthest from node cocoa powder
+#[1]  93  94 107 108 109 110 111 113 114 256 353 431 432 459 460 463 464 480 481
+
+#                  item
+#1          marshmallow
+#2    marshmallow creme
+#3       yellow mustard
+#4        honey mustard
+#5              mustard
+#6        dijon mustard
+#7  spicy brown mustard
+#8               mussel
+#9                 clam
+#10      mustard powder
+#11        mustard seed
+#12          pound cake
+#13     angel food cake
+#14           toothpick
+#15              skewer
+#16          baking mix
+#17         pancake mix
+#18             avocado
+#19           guacamole
+
+
+
+
+
+
+#Q-2)
+
+#Q-2A)
+require(twitteR)
+require(RCurl)
+consumer_key <-'x3DkrJTjJ1PjMAJx3HfCgJQya'
+consumer_secret <-'XD3tQ5eODm7lCW9bhn2Ptg4oJEBLWrCW6ShDzrVIRde5urbbXw'
+access_token <-'1154193151-Fq8xxFjr90ODVEj2La9kTshvpUUd5OGLbl5Fmhp'
+access_secret <-'DDgYlEuEUvTBd576VFCFe4RnNKOstpFv39rapLHlKhiwS'
+setup_twitter_oauth(consumer_key, consumer_secret, access_token, access_secret)
+
+myTweets <- searchTwitter("#SXSW2016", n=200, lang="en")
+myTweet
+
+k = 100
+tweetsDF <- twListToDF(myTweets)
+nameDF <- tweetsDF[, c("screenName")]
+uniqueNameDF <- unique(nameDF)
+hundredNamesDF <- head(uniqueNameDF, k)
+hundredNamesDF
+
+require(networkD3)
+require(igraph)
+
+network_tw <- data.frame(src=character(), target=character(), stringsAsFactors=FALSE) 
+for(i in 1:100)
+{
+start <- getUser(uniqueNameDF[i],retryOnRateLimit=900)
+friends.object<-lookupUsers(start$getFriendIDs(retryOnRateLimit=900))
+    follower.object<-lookupUsers(start$getFollowerIDs(retryOnRateLimit=900))
+    
+    n<- length(friends.object)
+    m<- length(follower.object)
+    
+    friends <- sapply(friends.object[1:n],screenName)
+    followers <- sapply(follower.object[1:m],screenName)
+    
+    networkData <- data.frame(src=uniqueNameDF[i], target=friends)
+    network_tw <- merge(network_tw, networkData,  all=T)
+    networkData <- data.frame(src=followers, target=uniqueNameDF[i])
+    network_tw <- merge(network_tw, networkData,  all=T)
+}
+
+View(network_tw)
+#hundredNamesDF=="weetabix_su" please change the name of this user screen name with the last records target user's screen name and note the index of the list on which we get TRUE by running above command.For me I get TRUE at 7 th index
+
+#Run the same for loop from i=7 till we got all users screen name
+
+for(i in 7:100)
+{
+start <- getUser(uniqueNameDF[i],retryOnRateLimit=900)
+friends.object<-lookupUsers(start$getFriendIDs(retryOnRateLimit=900))
+    follower.object<-lookupUsers(start$getFollowerIDs(retryOnRateLimit=900))
+    
+    n<- length(friends.object)
+    m<- length(follower.object)
+    
+    friends <- sapply(friends.object[1:n],screenName)
+    followers <- sapply(follower.object[1:m],screenName)
+    
+    networkData <- data.frame(src=uniqueNameDF[i], target=friends)
+    network_tw <- merge(network_tw, networkData,  all=T)
+    networkData <- data.frame(src=followers, target=uniqueNameDF[i])
+    network_tw <- merge(network_tw, networkData,  all=T)
+}
+
+#Q-2B)
+g <- graph.data.frame(network_tw, directed = F)
+
+degree(g, mode = "total")
+
+degree_distribution(g)
+
+plot(degree_distribution(g))
+
+
+#Q-2C)
+simpleNetwork(networkdata1, zoom = T, linkDistance = 60, opacity = 0.5, linkColour = "grey", nodeColour = "purple",
+  nodeClickColour = "red", textColour = "blue")
+
+
+
+#Q-3)
+
+#Q-3A)
+
+myTweets <- searchTwitter("#SXSW2016", n=200, lang="en")
+tweetsDF <- twListToDF(myTweets)
+
+From <- "from:"
+sxsw <- "+#SXSW2016"
+
+tweets_list <- data.frame(src=character(), target=character(), stringsAsFactors=FALSE) 
+
+#looping to get the tweets from specific user by getting the hundredNamedDF[j](unique usernames) and searching tweets that they've put in recent times
+for(j in 1:100)
+{
+  if(j %% 5 == 0){Sys.sleep(600)} 
+#Pausing the R execution if the rate limit reached to the specific threshold
+    tweets_object<-do.call("rbind",lapply(searchTwitter(paste(From,hundredNamesDF[j],sxsw,sep = ""),resultType = "recent",lang="en"), as.data.frame))
+    tweets_list <- merge(tweets_list, tweets_object,  all=T)
+}
+tweetsDF<-tweets_list
+
+#Q-3B)
+
+myTweets <- searchTwitter("#SXSW2016", n=200, lang="en")
+tweetsDF <- twListToDF(myTweets)
+
+install.packages("tm")
+library(tm)
+tweets_source <- VectorSource(tweetsDF$text)
+corpus <- Corpus(tweets_source)
+
+corpus <- tm_map(corpus, removePunctuation)
+
+corpus <- tm_map(corpus, stripWhitespace)
+
+corpus <- tm_map(corpus, removeWords, stopwords("english"))
+
+dtm <- DocumentTermMatrix(corpus)
+dtm2 <- as.matrix(dtm)
+
+#For n=1(unigram)
+frequency <- colSums(dtm2)
+frequency <- sort(frequency, decreasing=TRUE)
+
+#Output
+frequency[1:10]
+
+#For n=2(Bigram)
+BigramTokenizer <-
+  function(x)
+    unlist(lapply(ngrams(words(x), 2), paste, collapse = " "), use.names = FALSE)
+
+tdm <- TermDocumentMatrix(corpus, control = list(tokenize = BigramTokenizer))
+tdm2 <- as.matrix(tdm)
+
+frequency_2 <- rowSums(tdm2)
+
+frequency_2 <- sort(frequency_2, decreasing=TRUE)
+#Output
+frequency_2[1:10]
+
+#For Trigram
+trigramTokenizer <-
+  function(x)
+    unlist(lapply(ngrams(words(x), 3), paste, collapse = " "), use.names = FALSE)
+
+tdm_3 <- TermDocumentMatrix(corpus, control = list(tokenize = trigramTokenizer))
+tdm2_3 <- as.matrix(tdm_3)
+
+frequency_3 <- rowSums(tdm2_3)
+frequency_3 <- sort(frequency_3, decreasing=TRUE)
+#Output
+frequency_3[1:10]
+
+
+#Q-3C)
+
+sum(frequency_3)
+sum(frequency_2)
+sum(frequency)
+
+
+#Q-3D)
+
+myTweets <- searchTwitter("#SXSW2016", n=200, lang="en")
+k = 100
+tweetsDF <- twListToDF(myTweets)
+nameDF <- tweetsDF[, c("screenName")]
+uniqueNameDF <- unique(nameDF)
+hundredNamesDF <- head(uniqueNameDF, k)
+networkdata1 <- data.frame(src=character(), target=character(),distance=numeric(),stringsAsFactors=FALSE) 
+
+#Built a data frame that contain the screen no of the every user as a source and all the 100 other users as a target so that we can comute the distane measure from the specific user's tweets to all other user's tweets
+
+#Please wait for 5-10 minutes 
+for(i in 1:100)
+{
+  for(j in 1:100)
+  {
+  networkdata2<-data.frame(src=uniqueNameDF[i],target=uniqueNameDF[j],stringsAsFactors=FALSE)
+  networkdata1<-merge(networkdata1, networkdata2,  all=T)
+  }
+}
+
+
+tweets_frame1<-data.frame(screenname=tweetsDF$screenName,tweets=tweetsDF$text,stringsAsFactors=FALSE)
+
+
+#Encoding the tweets to UTF-8 format
+tweets_frame1$tweets<-iconv(tweets_frame1$tweets,"UTF-8")
+
+#Compute the distant measure(how many character in the target user's tweet differ from the source user's tweet) and this procedure I've done for all the users.
+
+#First I fix one user as a source and generate combination for all the other users(100 records)
+#This I'll do for each user so we have (100*100=10000 records)
+for (k in 1:length(networkdata1$src))
+{
+  networkdata1$distance[k]<-stringdist(as.character(tweets_frame1$tweets[tweets_frame1$screenname==networkdata1$src[k]]),as.character(tweets_frame1$tweets[tweets_frame1$screenname == networkdata1$target[k]]), method = "qgram", q = 1)
+}
+View(networkdata1)
+#The output shows the source user name,taget user name and distance(how many characters are differ in the target user's tweets from
+#source user's tweet)
+
+simpleNetwork(networkdata1, zoom = T, linkDistance = 60, opacity = 0.5, linkColour = "grey", nodeColour = "purple",
+  nodeClickColour = "red", textColour = "blue")
+
